@@ -56,7 +56,7 @@ class OneFileNotes
 		$this->widgets['wndMain']->show_all();
 
 		// seta o novo tamanho
-		$this->widgets['wndMain']->set_size_request($this->_config['interface']['width'], $this->_config['interface']['height']);
+		$this->widgets['wndMain']->resize($this->_config['interface']['width'], $this->_config['interface']['height']);
 		$this->widgets['wndMain']->move($this->_config['interface']['x'], $this->_config['interface']['y']);
 
 		// inicia o loop
@@ -127,6 +127,7 @@ class OneFileNotes
 						$this->_config['sourceview']['showlinenumbers'] = TRUE;	
 					}
 
+					$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
 					$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
 					
 				}
@@ -181,16 +182,10 @@ class OneFileNotes
 
 		// cria o sourceview
 		$sourceView = \GtkSourceView::new_with_buffer($sourceBuffer);
-		$sourceView->set_show_line_numbers(false);
+		$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
+		$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
 		$sourceView->set_auto_indent(true);
 		$sourceView->set_indent_on_tab(true);
-		
-		if($this->_config['sourceview']['showlinenumbers']) {
-			$sourceView->set_show_line_marks(TRUE);
-		}
-		else {
-			$sourceView->set_show_line_marks(FALSE);
-		}
 
 		$sourceView->set_tab_width(4);
 		$sourceView->set_tab_width(4);
