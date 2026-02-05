@@ -21,10 +21,14 @@ class OneFileNotes
 		$this->_config = [
 			'debug' => TRUE,
 			'interface' => [
+				'showdecoration' => TRUE,
 				'width' => 200,
 				'height' => 200,
 				'x' => 0,
 				'y' => 0
+			],
+			'sourceview' => [
+				'showlinenumbers' => TRUE,
 			],
 		];
 
@@ -68,7 +72,7 @@ class OneFileNotes
 		$this->widgets['wndMain'] = new \GtkWindow(\Gtk::WINDOW_TOPLEVEL);
 		$this->widgets['wndMain']->set_title("OnFileNotes");
 		$this->widgets['wndMain']->set_keep_above(TRUE);
-		$this->widgets['wndMain']->set_decorated(FALSE);
+		$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
 		$this->widgets['wndMain']->set_resizable(TRUE);
 
 		// cria o box principal
@@ -83,7 +87,8 @@ class OneFileNotes
 			// create submenu File
 			$menu = new \GtkMenu();
 			$menu->append($this->widgets['mnuNewFile']=\GtkMenuItem::new_with_label("New file"));
-			$menu->append($this->widgets['mnuResize']=\GtkCheckMenuItem::new_with_label("Resize Window"));
+			$menu->append($this->widgets['mnuShowDecoration']=\GtkCheckMenuItem::new_with_label("Window Decoration"));
+			$menu->append($this->widgets['mnuShowLineNumbers']=\GtkCheckMenuItem::new_with_label("Show Line Numbers"));
 			$menu->append(new \GtkSeparatorMenuItem());
 			$menu->append($this->widgets['mnuExit']=\GtkMenuItem::new_with_label("Exit"));
 
@@ -95,13 +100,39 @@ class OneFileNotes
 				\Gtk::main_quit();
 			});
 		
-			$this->widgets['mnuResize']->connect("activate", function($widget) {
+			if($this->_config['interface']['showdecoration']) {
+				$this->widgets['mnuShowDecoration']->set_active(TRUE);
+			}
+			$this->widgets['mnuShowDecoration']->connect("activate", function($widget) {
+				$this->_config['interface']['showdecoration'] = FALSE;
 				if($widget->get_active()) {
-					$this->widgets['wndMain']->set_decorated(TRUE);
+					$this->_config['interface']['showdecoration'] = TRUE;
+					
 				}
-				else {
-					$this->widgets['wndMain']->set_decorated(FALSE);
+				$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
+
+				// salva a configuração
+				$this->saveConfig();
+			});
+		
+			if($this->_config['sourceview']['showlinenumbers']) {
+				$this->widgets['mnuShowLineNumbers']->set_active(TRUE);
+			}
+			$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
+				// percorre os sourcesview
+				foreach($this->widgets['sourceView'] as $sourceView) {
+
+					$this->_config['sourceview']['showlinenumbers'] = FALSE;
+					if($widget->get_active()) {
+						$this->_config['sourceview']['showlinenumbers'] = TRUE;	
+					}
+
+					$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
+					
 				}
+
+				// salva a configuração
+				$this->saveConfig();
 			});
 
 		// cria as abas
@@ -153,7 +184,14 @@ class OneFileNotes
 		$sourceView->set_show_line_numbers(false);
 		$sourceView->set_auto_indent(true);
 		$sourceView->set_indent_on_tab(true);
-		$sourceView->set_show_line_marks(true);
+		
+		if($this->_config['sourceview']['showlinenumbers']) {
+			$sourceView->set_show_line_marks(TRUE);
+		}
+		else {
+			$sourceView->set_show_line_marks(FALSE);
+		}
+
 		$sourceView->set_tab_width(4);
 		$sourceView->set_tab_width(4);
 		$this->widgets['sourceView'][] = $sourceView;
