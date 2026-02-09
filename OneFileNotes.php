@@ -10,7 +10,11 @@ class OneFileNotes
 	private $_config_file;
 	public $saveTimeControl = NULL;
 
+	public $bufferSaveTimeControl = NULL;
+
 	public $widgets;
+
+	public $tabs = [];
 
 	/**
 	 *
@@ -124,6 +128,13 @@ class OneFileNotes
 			$this->widgets['mnuExit']->connect("activate", function($widget) {
 				\Gtk::main_quit();
 			});
+
+			/**
+			 * cria uma nova aba
+			 */
+			$this->widgets['mnuNewFile']->connect("activate", function($widget) {
+				$this->createNewTab();
+			});
 			
 			/**
 			 * seta o diretório onde os arquivos serão salvos
@@ -147,9 +158,6 @@ class OneFileNotes
 				}
 				$dialog->destroy();
 				
-
-
-
 			});
 		
 			if($this->_config['interface']['showdecoration']) {
@@ -172,7 +180,9 @@ class OneFileNotes
 			}
 			$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
 				// percorre os sourcesview
-				foreach($this->widgets['sourceView'] as $sourceView) {
+				foreach($this->tabs as $tab) {
+
+					$sourceView = $tab['sourceview'];
 
 					$this->_config['sourceview']['showlinenumbers'] = FALSE;
 					if($widget->get_active()) {
@@ -193,9 +203,6 @@ class OneFileNotes
 		$this->widgets['notebook']->set_scrollable(TRUE);
 		$vbox->pack_start($this->widgets['notebook'], TRUE, TRUE, 0);
 
-		$this->createNewTab("Geral");
-		$this->createNewTab("SiNCORE");
-		
 		// cria os sinais
 		$this->widgets['wndMain']->connect("destroy", function($widget) {
 			$this->saveConfig();
@@ -221,19 +228,20 @@ class OneFileNotes
 	{
 		// se tiver arquivo, le o arquivo
 		$name = "new";
-		if(file_exists($filepath)) {
+		if($filepath != NULL) {
 			$filecontent = file_get_contents($filepath);
 
 			// recupera o primeiro # do arquivo, que indica um titulo
-			$tag = "#";
-			$pos = strpos($filecontent, $tag);
-			if($pos === FALSE) {
-				$tag = "\n#";
-				$pos = strpos($filecontent, $tag);
-			}
-			if($pos !== FALSE) {
-				$name = substr($filecontent, $pos+strlen($tag)+1, strpos($filecontent, "\n", $pos)-$pos-3);
-				$name = str_replace("#", "", $name);
+			$lines = explode("\n", $filecontent);
+			$name = "";
+			foreach($lines as $line) {
+				// se inicia com #
+				if(strpos(trim($line), "#") === 0) {
+					$name = $line;
+					$name = str_replace("#", "", $name);
+					$name = trim($name);
+					break;
+				}
 			}
 			
 		}
@@ -249,7 +257,6 @@ class OneFileNotes
 
 		// cria o buffer
 		$sourceBuffer = new \GtkSourceBuffer();
-		$this->widgets['sourceBuffer'][] = $sourceBuffer;
 		$sourceBuffer->set_language($lang);
 
 		// cria o sourceview
@@ -258,13 +265,10 @@ class OneFileNotes
 		$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
 		$sourceView->set_auto_indent(true);
 		$sourceView->set_indent_on_tab(true);
-
 		$sourceView->set_tab_width(4);
-		$sourceView->set_tab_width(4);
-		$this->widgets['sourceView'][] = $sourceView;
 
 		// carrega o ultimo conteudo
-		if(file_exists($filepath)) {
+		if($filepath != NULL) {
 			$sourceBuffer->set_text($filecontent);
 		}
 
@@ -276,8 +280,76 @@ class OneFileNotes
 		$pagina = $this->widgets['notebook']->append_page($scroll, $eventbox);
 		$this->_debug("Pagina " . $pagina . " adicionada");
 
+
 		// reexibe o notebook
 		$this->widgets['notebook']->show_all();
+		$this->widgets['notebook']->set_current_page($pagina);
+
+		// adiciona o tab ao vetor
+		$this->tabs[] = [
+			'name' => $name,
+			'filename' => $filepath,
+			'sourceview' => $sourceView,
+			'tab_label' => $eventbox
+		];
+
+		// conecta ao changed
+		$sourceBuffer->connect("changed", function($buffer) use ($sourceView) {
+			// se ja tiver nada esperando, cancela
+			if($this->bufferSaveTimeControl != NULL) {
+				\Gtk::source_remove($this->bufferSaveTimeControl);
+			}
+
+			// cria uma nova
+			$this->bufferSaveTimeControl = \Gtk::timeout_add(1000, function() use ($buffer, $sourceView) {
+
+				// 
+				$this->_debug("ACABOU DE DIGITAR!");
+
+				// recupera o texto
+				$text = $buffer->get_text($buffer->get_start_iter(), $buffer->get_end_iter(), FALSE);
+				
+				// recupera o primeiro # do arquivo, que indica um titulo
+				$lines = explode("\n", $text);
+				$name = "";
+				foreach($lines as $line) {
+					// se inicia com #
+					if(strpos(trim($line), "#") === 0) {
+						$name = $line;
+						$name = str_replace("#", "", $name);
+						$name = trim($name);
+						break;
+					}
+				}
+
+				// se achou o nome
+				foreach($this->tabs as $index => $tab) {
+					if($tab['sourceview'] === $sourceView) {
+						
+						// seta o nome
+						$this->tabs[$index]['name'] = $name;
+						$this->tabs[$index]['tab_label']->get_children()[0]->set_label($name);
+
+						// se nao tiver salvo
+						if(!$tab['filename']) {
+							$this->tabs[$index]['filename'] = $this->_config['source_directory'] . "/" . $name . ".md";
+						}
+
+						break;
+					}
+				}
+
+				// se tiver nome do arquivo, salva
+				if($this->tabs[$index]['filename'] !== NULL) {
+					file_put_contents($this->tabs[$index]['filename'], $text);
+					$this->_debug("ARQUIVO " . $this->tabs[$index]['filename'] . " SALVO!");
+				}
+				
+				// finaliza o temporizador
+				$this->bufferSaveTimeControl = NULL;
+				return FALSE;
+			});
+		});
 
 		// adiciona o evento ao eventbox
 		$eventbox->connect("button-release-event", function($widget, $event) use ($scroll) {

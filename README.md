@@ -12,3 +12,5 @@ A one file application for notes
 - [ ] configurar wraptext
 - [ ] menu para configurar debug
 - [ ] ao digitar, verificar se o titulo mudou
+- [ ] ao fechar, avisar que tem arquivo sem estar salvou ou salvar ele temporariamente no .config até que tenha titulo
+- [ ] se mudar o titulo, mudar tambem o nome do arquivo, e se ja existir, colocar um 1/2/3 na frente ou algo assim
