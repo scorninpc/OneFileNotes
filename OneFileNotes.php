@@ -30,6 +30,7 @@ class OneFileNotes
 			'sourceview' => [
 				'showlinenumbers' => TRUE,
 			],
+			'source_directory' => ONEFILENOTES_CONFIG_PATH . "/",
 		];
 
 		// salva a configuração na primeira vez
@@ -46,9 +47,11 @@ class OneFileNotes
 		}
 		else {
 			$this->_debug("Lendo configurações de " . $this->_config_file);
-			$this->_config = json_decode(file_get_contents($this->_config_file), TRUE);
+			$config = json_decode(file_get_contents($this->_config_file), TRUE);
+
+			$this->_config = $this->_mergeRecursiveDistinct($this->_config, $config);
 		}
-		
+
 		// cria a interface
 		$this->createInterface();
 		
@@ -59,6 +62,21 @@ class OneFileNotes
 		$this->widgets['wndMain']->resize($this->_config['interface']['width'], $this->_config['interface']['height']);
 		$this->widgets['wndMain']->move($this->_config['interface']['x'], $this->_config['interface']['y']);
 
+		// carrega os arquivos
+		$this->loadTabFiles();
+
+		// create and add CSS
+		$css_provider = new \GtkCssProvider();
+		$css_provider->load_from_data("
+			.view.sourceview {
+				font-family: Monospace;
+				font-size: 9pt;
+				font-weight: 100;
+			}
+		");
+		$style_context = new \GtkStyleContext();
+		$style_context->add_provider_for_screen($css_provider, 600);
+
 		// inicia o loop
 		\Gtk::main();
 	}
@@ -68,12 +86,18 @@ class OneFileNotes
 	 */
 	public function createInterface()
 	{
+
+		
+
 		// cria o form
 		$this->widgets['wndMain'] = new \GtkWindow(\Gtk::WINDOW_TOPLEVEL);
 		$this->widgets['wndMain']->set_title("OnFileNotes");
 		$this->widgets['wndMain']->set_keep_above(TRUE);
 		$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
 		$this->widgets['wndMain']->set_resizable(TRUE);
+		if($this->_config['debug']) {
+			$this->widgets['wndMain']->set_interactive_debugging(TRUE);
+		}
 
 		// cria o box principal
 		$vbox = new \GtkBox(\GtkOrientation::VERTICAL);
@@ -87,6 +111,7 @@ class OneFileNotes
 			// create submenu File
 			$menu = new \GtkMenu();
 			$menu->append($this->widgets['mnuNewFile']=\GtkMenuItem::new_with_label("New file"));
+			$menu->append($this->widgets['mnuSetDirectory']=\GtkMenuItem::new_with_label("Set directory to save files"));
 			$menu->append($this->widgets['mnuShowDecoration']=\GtkCheckMenuItem::new_with_label("Window Decoration"));
 			$menu->append($this->widgets['mnuShowLineNumbers']=\GtkCheckMenuItem::new_with_label("Show Line Numbers"));
 			$menu->append(new \GtkSeparatorMenuItem());
@@ -98,6 +123,33 @@ class OneFileNotes
 		
 			$this->widgets['mnuExit']->connect("activate", function($widget) {
 				\Gtk::main_quit();
+			});
+			
+			/**
+			 * seta o diretório onde os arquivos serão salvos
+			 */
+			$this->widgets['mnuSetDirectory']->connect("activate", function($widget) {
+				// configure file selection 
+				$dialog = new \GtkFileChooserDialog("Choose a directory", $this->widgets['wndMain'], \GtkFileChooserAction::SELECT_FOLDER, ["Cancel", \GtkResponseType::CANCEL, "Ok", \GtkResponseType::OK]);
+				$dialog->set_current_folder($this->_config['source_directory']);
+				$result = $dialog->run();
+				if($result == \GtkResponseType::OK) {
+					$dir = $dialog->get_filenames()[0];
+					if(is_dir($dir)) {
+						$this->_config['source_directory'] = $dir;
+
+						// salva a nova configuração
+						$this->saveConfig();
+
+						// recarrega os tabs
+						$this->loadTabFiles();
+					}
+				}
+				$dialog->destroy();
+				
+
+
+
 			});
 		
 			if($this->_config['interface']['showdecoration']) {
@@ -138,6 +190,7 @@ class OneFileNotes
 
 		// cria as abas
 		$this->widgets['notebook'] = new \GtkNotebook();
+		$this->widgets['notebook']->set_scrollable(TRUE);
 		$vbox->pack_start($this->widgets['notebook'], TRUE, TRUE, 0);
 
 		$this->createNewTab("Geral");
@@ -164,8 +217,27 @@ class OneFileNotes
 	/**
 	 * cria uma nova aba
 	 */
-	public function createNewTab($name)
+	public function createNewTab($filepath=NULL)
 	{
+		// se tiver arquivo, le o arquivo
+		$name = "new";
+		if(file_exists($filepath)) {
+			$filecontent = file_get_contents($filepath);
+
+			// recupera o primeiro # do arquivo, que indica um titulo
+			$tag = "#";
+			$pos = strpos($filecontent, $tag);
+			if($pos === FALSE) {
+				$tag = "\n#";
+				$pos = strpos($filecontent, $tag);
+			}
+			if($pos !== FALSE) {
+				$name = substr($filecontent, $pos+strlen($tag)+1, strpos($filecontent, "\n", $pos)-$pos-3);
+				$name = str_replace("#", "", $name);
+			}
+			
+		}
+
 		// eventbox para criação do label e suportar menu de contexto
 		$eventbox = new \GtkEventBox();
 		$eventbox->add(new \GtkLabel($name));
@@ -192,7 +264,9 @@ class OneFileNotes
 		$this->widgets['sourceView'][] = $sourceView;
 
 		// carrega o ultimo conteudo
-		$sourceBuffer->set_text("# OK jovem\n - lista 1\n - lista 2");
+		if(file_exists($filepath)) {
+			$sourceBuffer->set_text($filecontent);
+		}
 
 		// adiciona o source view ao scrool e no window
 		$scroll = new \GtkScrolledWindow();
@@ -201,6 +275,9 @@ class OneFileNotes
 		// adiciona a pagina
 		$pagina = $this->widgets['notebook']->append_page($scroll, $eventbox);
 		$this->_debug("Pagina " . $pagina . " adicionada");
+
+		// reexibe o notebook
+		$this->widgets['notebook']->show_all();
 
 		// adiciona o evento ao eventbox
 		$eventbox->connect("button-release-event", function($widget, $event) use ($scroll) {
@@ -226,8 +303,28 @@ class OneFileNotes
 			}
 	
 		});
+	}
 
-		
+	/**
+	 * carrega os arquivos nas abas
+	 */
+	public function loadTabFiles()
+	{
+		// remove as abas
+		$pages = $this->widgets['notebook']->get_n_pages() - 1;
+		for($i=$pages; $i>=0; $i--) {
+			$this->widgets['notebook']->remove_page($i);
+		}
+
+		// faz o loop nos arquivos do diretório
+		$files = scandir($this->_config['source_directory']);
+		foreach($files as $file) {
+			// verifica se o arquivo é um .md
+			$extension = pathinfo($file, PATHINFO_EXTENSION);
+			if($extension == "md") {
+				$this->createNewTab($this->_config['source_directory'] . "/" . $file);
+			}
+		}
 	}
 
 	/**
@@ -263,6 +360,25 @@ class OneFileNotes
 		if($this->_config['debug']) {
 			echo "DEBUG: " . $msg . "\n";
 		}
+	}
+
+	/**
+	 * faz o merge recursivo para novas configurações
+	 */
+	private function _mergeRecursiveDistinct($array1, $array2)
+	{
+		$merged = $array1;
+
+		foreach($array2 as $key => $value) {
+			if(is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+				$merged[$key] = $this->_mergeRecursiveDistinct($merged[$key], $value);
+			}
+			else {
+				$merged[$key] = $value;
+			}
+		}
+
+		return $merged;
 	}
 
 
