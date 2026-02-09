@@ -5,12 +5,14 @@ A one file application for notes
 # ToDo
 - [ ] personalização da fonte
 - [ ] monitor pre-definido
-- [ ] posições pre-definidas
+- [ ] posições da janela pre-definidas
 - [ ] quando fechar uma aba, perguntar se deve remover o arquivo, caso não remover, por em um ignore-list
 - [ ] resetar o ignore-list quando mudar o diretório
 - [ ] organizar o menu para File / View / Config / About
 - [ ] configurar wraptext
 - [ ] menu para configurar debug
-- [ ] ao digitar, verificar se o titulo mudou
+- [x] ao digitar, verificar se o titulo mudou
 - [ ] ao fechar, avisar que tem arquivo sem estar salvou ou salvar ele temporariamente no .config até que tenha titulo
-- [ ] se mudar o titulo, mudar tambem o nome do arquivo, e se ja existir, colocar um 1/2/3 na frente ou algo assim
+- [x] se mudar o titulo, mudar tambem o nome do arquivo, e se ja existir, colocar um 1/2/3 na frente ou algo assim
+- [ ] manter a ordem da aba
+- [ ] adicionar opção de auto-inicializar, que cria o `.desktop`

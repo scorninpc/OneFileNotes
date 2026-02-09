@@ -322,17 +322,36 @@ class OneFileNotes
 					}
 				}
 
-				// se achou o nome
+				// recupera o tab
 				foreach($this->tabs as $index => $tab) {
+					
 					if($tab['sourceview'] === $sourceView) {
 						
-						// seta o nome
-						$this->tabs[$index]['name'] = $name;
-						$this->tabs[$index]['tab_label']->get_children()[0]->set_label($name);
+						// seta o nome caso tenha achado
+						if($tab['name'] != $name) {
+							// cria o nome do novo arquivo e verifica se ele ja existe
+							$filename = $this->_config['source_directory'] . "/" . $name . ".md";
+							$this->_debug("ARQUIVO: " . $filename);
+							if(file_exists($filename)) {
+								$name = $name . "_0";
+							}
 
-						// se nao tiver salvo
-						if(!$tab['filename']) {
-							$this->tabs[$index]['filename'] = $this->_config['source_directory'] . "/" . $name . ".md";
+							// recria o novo nome
+							$filename = $this->_config['source_directory'] . "/" . $name . ".md";
+							$this->_debug("ARQUIVO: " . $filename);
+							if(!file_exists($filename)) {
+
+								// se o arquivo ja ta salvo, renomeia
+								if(strlen($this->tabs[$index]['filename']??"") > 0) {
+									rename($this->tabs[$index]['filename'], $filename);
+								}
+
+								$this->tabs[$index]['filename'] = $filename;
+							}
+
+							// muda o nome, o tab
+							$this->tabs[$index]['name'] = $name;
+							$this->tabs[$index]['tab_label']->get_children()[0]->set_label($name);
 						}
 
 						break;
