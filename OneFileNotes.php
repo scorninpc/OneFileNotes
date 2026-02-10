@@ -296,7 +296,48 @@ class OneFileNotes
 
 				// menu fechar
 				$mnuClose->connect("activate", function() use ($pagina) {
-					$this->widgets['notebook']->remove_page($pagina);
+
+					// pergunta se deve remover o arquivo
+					$dialog = \GtkMessageDialog::new_with_markup($this->widgets['wndMain'], \GtkDialogFlags::MODAL, \GtkMessageType::WARNING, \GtkButtonsType::OK_CANCEL, "when close a tab, the file will be deleted too!");
+					$result = $dialog->run();
+					if($result != \GtkResponseType::CANCEL) {
+
+						// percorre as tabs
+						foreach($this->tabs as $index => $tab) {
+
+							// recupera a pagina
+							$sourceView = $tab['sourceview'];
+							$scroll = $sourceView->get_parent();
+							$page = $this->widgets['notebook']->page_num($scroll);
+
+							// verifica se é a pagina
+							if($pagina == $page) {
+								// remove o arquivo
+								unlink($tab['filename']);
+
+								// remove a tab
+								$this->widgets['notebook']->remove_page($pagina);
+
+								// remove do global
+								unset($this->tabs[$index]);
+
+								// ja sai
+								break;
+							}
+
+						}
+
+						// recupera a pagina
+				// $pagina = $this->widgets['notebook']->page_num($scroll);
+
+						// recupra o tab
+						// $this->widgets['notebook']->get_action_widget($pagina);
+
+						// $this->widgets['notebook']->remove_page($pagina);
+
+
+					}
+					$dialog->destroy();
 				});
 				
 				// mostra o menu

@@ -6,7 +6,7 @@ A one file application for notes
 - [ ] personalização da fonte
 - [ ] monitor pre-definido
 - [ ] posições da janela pre-definidas
-- [ ] quando fechar uma aba, perguntar se deve remover o arquivo, caso não remover, por em um ignore-list
+- [x] quando fechar uma aba, perguntar se deve remover o arquivo, caso não remover, por em um ignore-list
 - [ ] resetar o ignore-list quando mudar o diretório
 - [x] organizar o menu para File / View / Config / About
 - [ ] configurar wraptext
@@ -19,3 +19,5 @@ A one file application for notes
 - [ ] adicionar opção de auto-inicializar, que cria o `.desktop`
 - [ ] mudar temas do sourceview
 - [ ] mudar markdown ou text
+- [ ] marcar opção de `sempre a frente`
+- [ ] colocar um * no tab, informando que ele nao esta salvo
