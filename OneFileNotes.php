@@ -90,9 +90,6 @@ class OneFileNotes
 	 */
 	public function createInterface()
 	{
-
-		
-
 		// cria o form
 		$this->widgets['wndMain'] = new \GtkWindow(\Gtk::WINDOW_TOPLEVEL);
 		$this->widgets['wndMain']->set_title("OnFileNotes");
@@ -104,104 +101,17 @@ class OneFileNotes
 		}
 
 		// cria o box principal
-		$vbox = new \GtkBox(\GtkOrientation::VERTICAL);
-		$vbox->set_border_width(0);
-		$this->widgets['wndMain']->add($vbox);
+		$this->widgets['vbxMain'] = new \GtkBox(\GtkOrientation::VERTICAL);
+		$this->widgets['vbxMain']->set_border_width(0);
+		$this->widgets['wndMain']->add($this->widgets['vbxMain']);
 		
-		// cria a barra de menu
-		$menubar = new \GtkMenuBar();
-		$vbox->pack_start($menubar, FALSE, FALSE, 0);
-
-			// create submenu File
-			$menu = new \GtkMenu();
-			$menu->append($this->widgets['mnuNewFile']=\GtkMenuItem::new_with_label("New file"));
-			$menu->append($this->widgets['mnuSetDirectory']=\GtkMenuItem::new_with_label("Set directory to save files"));
-			$menu->append($this->widgets['mnuShowDecoration']=\GtkCheckMenuItem::new_with_label("Window Decoration"));
-			$menu->append($this->widgets['mnuShowLineNumbers']=\GtkCheckMenuItem::new_with_label("Show Line Numbers"));
-			$menu->append(new \GtkSeparatorMenuItem());
-			$menu->append($this->widgets['mnuExit']=\GtkMenuItem::new_with_label("Exit"));
-
-			$menuitem = \GtkMenuItem::new_with_label("File");
-			$menuitem->set_submenu($menu);
-			$menubar->append($menuitem);
-		
-			$this->widgets['mnuExit']->connect("activate", function($widget) {
-				\Gtk::main_quit();
-			});
-
-			/**
-			 * cria uma nova aba
-			 */
-			$this->widgets['mnuNewFile']->connect("activate", function($widget) {
-				$this->createNewTab();
-			});
-			
-			/**
-			 * seta o diretório onde os arquivos serão salvos
-			 */
-			$this->widgets['mnuSetDirectory']->connect("activate", function($widget) {
-				// configure file selection 
-				$dialog = new \GtkFileChooserDialog("Choose a directory", $this->widgets['wndMain'], \GtkFileChooserAction::SELECT_FOLDER, ["Cancel", \GtkResponseType::CANCEL, "Ok", \GtkResponseType::OK]);
-				$dialog->set_current_folder($this->_config['source_directory']);
-				$result = $dialog->run();
-				if($result == \GtkResponseType::OK) {
-					$dir = $dialog->get_filenames()[0];
-					if(is_dir($dir)) {
-						$this->_config['source_directory'] = $dir;
-
-						// salva a nova configuração
-						$this->saveConfig();
-
-						// recarrega os tabs
-						$this->loadTabFiles();
-					}
-				}
-				$dialog->destroy();
-				
-			});
-		
-			if($this->_config['interface']['showdecoration']) {
-				$this->widgets['mnuShowDecoration']->set_active(TRUE);
-			}
-			$this->widgets['mnuShowDecoration']->connect("activate", function($widget) {
-				$this->_config['interface']['showdecoration'] = FALSE;
-				if($widget->get_active()) {
-					$this->_config['interface']['showdecoration'] = TRUE;
-					
-				}
-				$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
-
-				// salva a configuração
-				$this->saveConfig();
-			});
-		
-			if($this->_config['sourceview']['showlinenumbers']) {
-				$this->widgets['mnuShowLineNumbers']->set_active(TRUE);
-			}
-			$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
-				// percorre os sourcesview
-				foreach($this->tabs as $tab) {
-
-					$sourceView = $tab['sourceview'];
-
-					$this->_config['sourceview']['showlinenumbers'] = FALSE;
-					if($widget->get_active()) {
-						$this->_config['sourceview']['showlinenumbers'] = TRUE;	
-					}
-
-					$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
-					$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
-					
-				}
-
-				// salva a configuração
-				$this->saveConfig();
-			});
+		// cria os menus
+		$this->createMenu();
 
 		// cria as abas
 		$this->widgets['notebook'] = new \GtkNotebook();
 		$this->widgets['notebook']->set_scrollable(TRUE);
-		$vbox->pack_start($this->widgets['notebook'], TRUE, TRUE, 0);
+		$this->widgets['vbxMain']->pack_start($this->widgets['notebook'], TRUE, TRUE, 0);
 
 		// cria os sinais
 		$this->widgets['wndMain']->connect("destroy", function($widget) {
@@ -253,7 +163,7 @@ class OneFileNotes
 
 		// cria as configurações do sourceview
 		$this->widgets['sourceLanguageManager'] = new \GtkSourceLanguageManager();
-		$lang = $this->widgets['sourceLanguageManager']->get_language("markdown");
+		$lang = $this->widgets['sourceLanguageManager']->get_language("text");
 
 		// cria o buffer
 		$sourceBuffer = new \GtkSourceBuffer();
@@ -441,6 +351,134 @@ class OneFileNotes
 			$this->saveTimeControl = NULL;
 			return FALSE;
 		});
+	}
+
+	/**
+	 * cria os menus
+	 */
+	public function createMenu()
+	{
+
+		// cria a barra de menu
+		$menubar = new \GtkMenuBar();
+		$this->widgets['vbxMain']->pack_start($menubar, FALSE, FALSE, 0);
+
+
+			// arquivo
+			$mnuFile = \GtkMenuItem::new_with_label("File");
+			$menubar->append($mnuFile);
+			$menu = new \GtkMenu();
+
+				// new file
+				$this->widgets['mnuNewFile'] = \GtkMenuItem::new_with_label("New file");
+				$menu->append($this->widgets['mnuNewFile']);
+				
+				// --
+				$menu->append(new \GtkSeparatorMenuItem());
+
+				// exit
+				$this->widgets['mnuExit'] = \GtkMenuItem::new_with_label("Exit");
+				$menu->append($this->widgets['mnuExit']);
+
+				$mnuFile->set_submenu($menu);
+
+			// view
+			$mnuView = \GtkMenuItem::new_with_label("View");
+			$menubar->append($mnuView);
+			$menu = new \GtkMenu();
+
+				// seta o diretório para salvar os arquivos
+				$this->widgets['mnuShowLineNumbers'] = \GtkCheckMenuItem::new_with_label("Show Line Numbers");
+				$menu->append($this->widgets['mnuShowLineNumbers']);
+
+				$mnuView->set_submenu($menu);
+
+			// preferencias
+			$mnuPreferences = \GtkMenuItem::new_with_label("Preferences");
+			$menubar->append($mnuPreferences);
+			$menu = new \GtkMenu();
+
+				// seta o diretório para salvar os arquivos
+				$this->widgets['mnuSetDirectory'] = \GtkMenuItem::new_with_label("Set directory to save files");
+				$menu->append($this->widgets['mnuSetDirectory']);
+
+				// mostra ou não a decoração das janelas
+				$this->widgets['mnuShowDecoration'] = \GtkCheckMenuItem::new_with_label("Window Decoration");
+				$menu->append($this->widgets['mnuShowDecoration']);
+
+				$mnuPreferences->set_submenu($menu);
+
+			// exit
+			$this->widgets['mnuExit']->connect("activate", function($widget) {
+				\Gtk::main_quit();
+			});
+
+			// novo arquivo
+			$this->widgets['mnuNewFile']->connect("activate", function($widget) {
+				$this->createNewTab();
+			});
+
+			
+			// seta o diretório onde os arquivos serão salvos
+			$this->widgets['mnuSetDirectory']->connect("activate", function($widget) {
+				// configure file selection 
+				$dialog = new \GtkFileChooserDialog("Choose a directory", $this->widgets['wndMain'], \GtkFileChooserAction::SELECT_FOLDER, ["Cancel", \GtkResponseType::CANCEL, "Ok", \GtkResponseType::OK]);
+				$dialog->set_current_folder($this->_config['source_directory']);
+				$result = $dialog->run();
+				if($result == \GtkResponseType::OK) {
+					$dir = $dialog->get_filenames()[0];
+					if(is_dir($dir)) {
+						$this->_config['source_directory'] = $dir;
+
+						// salva a nova configuração
+						$this->saveConfig();
+
+						// recarrega os tabs
+						$this->loadTabFiles();
+					}
+				}
+				$dialog->destroy();
+			});
+		
+			// mostrar a decoração da janela
+			if($this->_config['interface']['showdecoration']) {
+				$this->widgets['mnuShowDecoration']->set_active(TRUE);
+			}
+			$this->widgets['mnuShowDecoration']->connect("activate", function($widget) {
+				$this->_config['interface']['showdecoration'] = FALSE;
+				if($widget->get_active()) {
+					$this->_config['interface']['showdecoration'] = TRUE;
+					
+				}
+				$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
+
+				// salva a configuração
+				$this->saveConfig();
+			});
+		
+			// mostrar as linhas
+			if($this->_config['sourceview']['showlinenumbers']) {
+				$this->widgets['mnuShowLineNumbers']->set_active(TRUE);
+			}
+			$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
+				// percorre os sourcesview
+				foreach($this->tabs as $tab) {
+
+					$sourceView = $tab['sourceview'];
+
+					$this->_config['sourceview']['showlinenumbers'] = FALSE;
+					if($widget->get_active()) {
+						$this->_config['sourceview']['showlinenumbers'] = TRUE;	
+					}
+
+					$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
+					$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
+					
+				}
+
+				// salva a configuração
+				$this->saveConfig();
+			});
 	}
 
 	/**
