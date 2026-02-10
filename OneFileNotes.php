@@ -190,6 +190,9 @@ class OneFileNotes
 		$pagina = $this->widgets['notebook']->append_page($scroll, $eventbox);
 		$this->_debug("Pagina " . $pagina . " adicionada");
 
+		// marca como ordenavel
+		$this->widgets['notebook']->set_tab_reorderable($scroll, TRUE);
+
 
 		// reexibe o notebook
 		$this->widgets['notebook']->show_all();
