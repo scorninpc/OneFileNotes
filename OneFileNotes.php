@@ -29,7 +29,8 @@ class OneFileNotes
 				'width' => 200,
 				'height' => 200,
 				'x' => 0,
-				'y' => 0
+				'y' => 0,
+				'alwaysontop' => FALSE
 			],
 			'sourceview' => [
 				'showlinenumbers' => TRUE,
@@ -92,8 +93,7 @@ class OneFileNotes
 	{
 		// cria o form
 		$this->widgets['wndMain'] = new \GtkWindow(\Gtk::WINDOW_TOPLEVEL);
-		$this->widgets['wndMain']->set_title("OnFileNotes");
-		$this->widgets['wndMain']->set_keep_above(TRUE);
+		$this->widgets['wndMain']->set_title("OneFileNotes");
 		$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
 		$this->widgets['wndMain']->set_resizable(TRUE);
 		if($this->_config['debug']) {
@@ -450,6 +450,10 @@ class OneFileNotes
 				$this->widgets['mnuShowDecoration'] = \GtkCheckMenuItem::new_with_label("Window Decoration");
 				$menu->append($this->widgets['mnuShowDecoration']);
 
+				// deixa sempre no topo ou não
+				$this->widgets['mnuAlwaysOnTop'] = \GtkCheckMenuItem::new_with_label("Always On Top");
+				$menu->append($this->widgets['mnuAlwaysOnTop']);
+
 				$mnuPreferences->set_submenu($menu);
 
 			// exit
@@ -522,6 +526,27 @@ class OneFileNotes
 
 				// salva a configuração
 				$this->saveConfig();
+			});
+
+			// always on top
+			if($this->_config['interface']['alwaysontop']) {
+				$this->widgets['mnuAlwaysOnTop']->set_active(TRUE);
+				$this->widgets['wndMain']->set_keep_above(TRUE);
+			}
+			$this->widgets['mnuAlwaysOnTop']->connect("activate", function($widget) {
+
+				if($widget->get_active()) {
+					$this->_config['interface']['alwaysontop'] = TRUE;
+					$this->widgets['wndMain']->set_keep_above(TRUE);
+				}
+				else {
+					$this->_config['interface']['alwaysontop'] = FALSE;
+					$this->widgets['wndMain']->set_keep_above(FALSE);
+				}
+
+				// salva a configuração
+				$this->saveConfig();
+
 			});
 	}
 
