@@ -455,6 +455,16 @@ class OneFileNotes
 				$this->widgets['mnuInteractiveDebug'] = \GtkMenuItem::new_with_label("Open Interactive Debugging");
 				$menu->append($this->widgets['mnuInteractiveDebug']);
 
+				// criar link
+				$desktop_file = "/home/" . getenv("USER") . "/.local/share/applications/OneFileNotes.desktop";
+				if(file_exists($desktop_file)) {
+					$this->widgets['mnuCreateMenu'] = \GtkMenuItem::new_with_label("Remove .desktop menu");	
+				}
+				else {
+					$this->widgets['mnuCreateMenu'] = \GtkMenuItem::new_with_label("Create .desktop menu");
+				}
+				$menu->append($this->widgets['mnuCreateMenu']);
+
 				$mnuPreferences->set_submenu($menu);
 
 		// exit
@@ -553,6 +563,36 @@ class OneFileNotes
 		// interactive debug
 		$this->widgets['mnuInteractiveDebug']->connect("activate", function($widget) {
 			$this->widgets['wndMain']->set_interactive_debugging(TRUE);
+		});
+
+		// create .desktop menu 
+		$this->widgets['mnuCreateMenu']->connect("activate", function($widget) {
+
+			// cria o caminho do arquivo
+			$desktop_file = "/home/" . getenv("USER") . "/.local/share/applications/OneFileNotes.desktop";
+			if(file_exists($desktop_file)) {
+				unlink($desktop_file);
+
+				// muda o nome do menu
+				$this->widgets['mnuCreateMenu']->set_label("Create .desktop menu");
+			}
+			else {
+				// recupera o comando executa
+				$pid = getmypid();
+				$cmdline = file_get_contents("/proc/$pid/cmdline");
+				$cmdline = str_replace("\0", " ", trim($cmdline));
+
+				// cria o arquivo .desktop
+				file_put_contents($desktop_file, "[Desktop Entry]
+Name=OneFileNotes
+#Icon=/caminho/para/icone.png
+Exec=" . $cmdline . "
+Type=Application
+Categories=Office;");
+
+				// muda o nome do menu
+				$this->widgets['mnuCreateMenu']->set_label("Remove .desktop menu");
+			}
 		});
 			
 	}
