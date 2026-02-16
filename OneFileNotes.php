@@ -96,10 +96,7 @@ class OneFileNotes
 		$this->widgets['wndMain']->set_title("OneFileNotes");
 		$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
 		$this->widgets['wndMain']->set_resizable(TRUE);
-		if($this->_config['debug']) {
-			$this->widgets['wndMain']->set_interactive_debugging(TRUE);
-		}
-
+		
 		// cria o box principal
 		$this->widgets['vbxMain'] = new \GtkBox(\GtkOrientation::VERTICAL);
 		$this->widgets['vbxMain']->set_border_width(0);
@@ -454,100 +451,110 @@ class OneFileNotes
 				$this->widgets['mnuAlwaysOnTop'] = \GtkCheckMenuItem::new_with_label("Always On Top");
 				$menu->append($this->widgets['mnuAlwaysOnTop']);
 
+				// debug interativo
+				$this->widgets['mnuInteractiveDebug'] = \GtkMenuItem::new_with_label("Open Interactive Debugging");
+				$menu->append($this->widgets['mnuInteractiveDebug']);
+
 				$mnuPreferences->set_submenu($menu);
 
-			// exit
-			$this->widgets['mnuExit']->connect("activate", function($widget) {
-				\Gtk::main_quit();
-			});
+		// exit
+		$this->widgets['mnuExit']->connect("activate", function($widget) {
+			\Gtk::main_quit();
+		});
 
-			// novo arquivo
-			$this->widgets['mnuNewFile']->connect("activate", function($widget) {
-				$this->createNewTab();
-			});
+		// novo arquivo
+		$this->widgets['mnuNewFile']->connect("activate", function($widget) {
+			$this->createNewTab();
+		});
 
-			
-			// seta o diretório onde os arquivos serão salvos
-			$this->widgets['mnuSetDirectory']->connect("activate", function($widget) {
-				// configure file selection 
-				$dialog = new \GtkFileChooserDialog("Choose a directory", $this->widgets['wndMain'], \GtkFileChooserAction::SELECT_FOLDER, ["Cancel", \GtkResponseType::CANCEL, "Ok", \GtkResponseType::OK]);
-				$dialog->set_current_folder($this->_config['source_directory']);
-				$result = $dialog->run();
-				if($result == \GtkResponseType::OK) {
-					$dir = $dialog->get_filenames()[0];
-					if(is_dir($dir)) {
-						$this->_config['source_directory'] = $dir;
-
-						// salva a nova configuração
-						$this->saveConfig();
-
-						// recarrega os tabs
-						$this->loadTabFiles();
-					}
-				}
-				$dialog->destroy();
-			});
 		
-			// mostrar a decoração da janela
-			if($this->_config['interface']['showdecoration']) {
-				$this->widgets['mnuShowDecoration']->set_active(TRUE);
+		// seta o diretório onde os arquivos serão salvos
+		$this->widgets['mnuSetDirectory']->connect("activate", function($widget) {
+			// configure file selection 
+			$dialog = new \GtkFileChooserDialog("Choose a directory", $this->widgets['wndMain'], \GtkFileChooserAction::SELECT_FOLDER, ["Cancel", \GtkResponseType::CANCEL, "Ok", \GtkResponseType::OK]);
+			$dialog->set_current_folder($this->_config['source_directory']);
+			$result = $dialog->run();
+			if($result == \GtkResponseType::OK) {
+				$dir = $dialog->get_filenames()[0];
+				if(is_dir($dir)) {
+					$this->_config['source_directory'] = $dir;
+
+					// salva a nova configuração
+					$this->saveConfig();
+
+					// recarrega os tabs
+					$this->loadTabFiles();
+				}
 			}
-			$this->widgets['mnuShowDecoration']->connect("activate", function($widget) {
-				$this->_config['interface']['showdecoration'] = FALSE;
+			$dialog->destroy();
+		});
+	
+		// mostrar a decoração da janela
+		if($this->_config['interface']['showdecoration']) {
+			$this->widgets['mnuShowDecoration']->set_active(TRUE);
+		}
+		$this->widgets['mnuShowDecoration']->connect("activate", function($widget) {
+			$this->_config['interface']['showdecoration'] = FALSE;
+			if($widget->get_active()) {
+				$this->_config['interface']['showdecoration'] = TRUE;
+				
+			}
+			$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
+
+			// salva a configuração
+			$this->saveConfig();
+		});
+	
+		// mostrar as linhas
+		if($this->_config['sourceview']['showlinenumbers']) {
+			$this->widgets['mnuShowLineNumbers']->set_active(TRUE);
+		}
+		$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
+			// percorre os sourcesview
+			foreach($this->tabs as $tab) {
+
+				$sourceView = $tab['sourceview'];
+
+				$this->_config['sourceview']['showlinenumbers'] = FALSE;
 				if($widget->get_active()) {
-					$this->_config['interface']['showdecoration'] = TRUE;
-					
+					$this->_config['sourceview']['showlinenumbers'] = TRUE;	
 				}
-				$this->widgets['wndMain']->set_decorated($this->_config['interface']['showdecoration']);
 
-				// salva a configuração
-				$this->saveConfig();
-			});
-		
-			// mostrar as linhas
-			if($this->_config['sourceview']['showlinenumbers']) {
-				$this->widgets['mnuShowLineNumbers']->set_active(TRUE);
+				$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
+				$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
+				
 			}
-			$this->widgets['mnuShowLineNumbers']->connect("activate", function($widget) {
-				// percorre os sourcesview
-				foreach($this->tabs as $tab) {
 
-					$sourceView = $tab['sourceview'];
+			// salva a configuração
+			$this->saveConfig();
+		});
 
-					$this->_config['sourceview']['showlinenumbers'] = FALSE;
-					if($widget->get_active()) {
-						$this->_config['sourceview']['showlinenumbers'] = TRUE;	
-					}
+		// always on top
+		if($this->_config['interface']['alwaysontop']) {
+			$this->widgets['mnuAlwaysOnTop']->set_active(TRUE);
+			$this->widgets['wndMain']->set_keep_above(TRUE);
+		}
+		$this->widgets['mnuAlwaysOnTop']->connect("activate", function($widget) {
 
-					$sourceView->set_show_line_numbers($this->_config['sourceview']['showlinenumbers']);
-					$sourceView->set_show_line_marks($this->_config['sourceview']['showlinenumbers']);
-					
-				}
-
-				// salva a configuração
-				$this->saveConfig();
-			});
-
-			// always on top
-			if($this->_config['interface']['alwaysontop']) {
-				$this->widgets['mnuAlwaysOnTop']->set_active(TRUE);
+			if($widget->get_active()) {
+				$this->_config['interface']['alwaysontop'] = TRUE;
 				$this->widgets['wndMain']->set_keep_above(TRUE);
 			}
-			$this->widgets['mnuAlwaysOnTop']->connect("activate", function($widget) {
+			else {
+				$this->_config['interface']['alwaysontop'] = FALSE;
+				$this->widgets['wndMain']->set_keep_above(FALSE);
+			}
 
-				if($widget->get_active()) {
-					$this->_config['interface']['alwaysontop'] = TRUE;
-					$this->widgets['wndMain']->set_keep_above(TRUE);
-				}
-				else {
-					$this->_config['interface']['alwaysontop'] = FALSE;
-					$this->widgets['wndMain']->set_keep_above(FALSE);
-				}
+			// salva a configuração
+			$this->saveConfig();
 
-				// salva a configuração
-				$this->saveConfig();
+		});
 
-			});
+		// interactive debug
+		$this->widgets['mnuInteractiveDebug']->connect("activate", function($widget) {
+			$this->widgets['wndMain']->set_interactive_debugging(TRUE);
+		});
+			
 	}
 
 	/**
