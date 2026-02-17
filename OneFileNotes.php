@@ -36,6 +36,7 @@ END;
 				'y' => 0,
 				'alwaysontop' => FALSE
 			],
+			'tabs' => [],
 			'sourceview' => [
 				'showlinenumbers' => TRUE,
 			],
@@ -120,6 +121,42 @@ END;
 		$this->widgets['notebook'] = new \GtkNotebook();
 		$this->widgets['notebook']->set_scrollable(TRUE);
 		$this->widgets['vbxMain']->pack_start($this->widgets['notebook'], TRUE, TRUE, 0);
+
+		
+		$this->widgets['notebook']->connect('page-reordered', function($widget, $child, $page_num) {
+
+			$this->_debug("Reordenando as abas");
+
+			// zera os tabs
+			$this->_config['tabs'] = [];
+
+			// percorre as abas no notebook
+			$pages = $this->widgets['notebook']->get_n_pages();
+			for($i=0; $i<$pages; $i++) {
+
+				// recupera os dados da aba
+				$page = $widget->get_nth_page($i);
+				$eventbox = $widget->get_tab_label($page);
+				$label = $eventbox->get_child();
+				$name = $label->get_text();
+
+				// percorre os tabs
+				foreach($this->tabs as $index => $tab) {
+
+					if($this->tabs[$index]['name'] === $name) {
+						$filename = $this->tabs[$index]['filename'];
+
+						$this->_config['tabs'][] = $filename;
+						break;
+					}
+				}
+
+			}
+
+			// salva
+			$this->saveConfig();
+
+		});
 
 		// cria os sinais
 		$this->widgets['wndMain']->connect("destroy", function($widget) {
@@ -363,11 +400,15 @@ END;
 	 */
 	public function loadTabFiles()
 	{
+
 		// remove as abas
 		$pages = $this->widgets['notebook']->get_n_pages() - 1;
 		for($i=$pages; $i>=0; $i--) {
 			$this->widgets['notebook']->remove_page($i);
 		}
+
+		// armazena os arquivos
+		$files = [];
 
 		// faz o loop nos arquivos do diretório
 		$files = scandir($this->_config['source_directory']);
@@ -375,7 +416,20 @@ END;
 			// verifica se o arquivo é um .md
 			$extension = pathinfo($file, PATHINFO_EXTENSION);
 			if($extension == "md") {
-				$this->createNewTab($this->_config['source_directory'] . "/" . $file);
+				$filepath = $this->_config['source_directory'] . "/" . $file;
+				if(!in_array($filepath, $this->_config['tabs'])) {
+					$this->_config['tabs'][] = $filepath;
+				}
+			}
+		}
+
+		// percorre os tabs criados de arquivos
+		foreach($this->_config['tabs'] as $index => $file) {
+			if(file_exists($file)) {
+				$this->createNewTab($file);
+			}
+			else {
+				unset($this->_config['tabs'][$index]);
 			}
 		}
 	}
