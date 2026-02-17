@@ -1,4 +1,4 @@
-# ![OneFileNotes](./OneFileNotes.png | 32x32) OneFileNotes
+# <img width="32" height="32" alt="OneFileNotes" src="https://github.com/user-attachments/assets/59343abb-1336-4167-a256-d855b2f56b62" /> OneFileNotes
 
 **OneFileNotes** é um bloco de notas leve, simples e eficiente, feito em **PHP-GTK3**. Tudo em um só arquivo!
 
@@ -35,7 +35,14 @@
    ```
 3. Configure o item de menu e autostart diretamente do menu.
 
-4. Comece a criar e salvar suas notas!
+   <img width="352" height="214" alt="ofn01" src="https://github.com/user-attachments/assets/2d7b2dbd-744f-4db3-a0f6-8a0ffea63d9d" />
+
+
+5. Comece a criar e salvar suas notas!
+
+   <img width="617" height="1025" alt="image" src="https://github.com/user-attachments/assets/101b1da2-76b8-4ae8-8ab4-a4b8a0b14ce8" />
+
+
 
 ---
 
