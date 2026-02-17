@@ -1,23 +1,55 @@
-# OneFileNotes
-A one file application for notes
+# ![OneFileNotes](./OneFileNotes.png | 32x32) OneFileNotes
 
+**OneFileNotes** é um bloco de notas leve, simples e eficiente, feito em **PHP-GTK3**. Tudo em um só arquivo!
 
-# ToDo
-- [ ] personalização da fonte
-- [ ] monitor pre-definido
-- [ ] posições da janela pre-definidas
-- [x] quando fechar uma aba, perguntar se deve remover o arquivo, caso não remover, por em um ignore-list
-- [ ] resetar o ignore-list quando mudar o diretório
-- [x] organizar o menu para File / View / Config / About
-- [ ] configurar wraptext
-- [ ] menu para configurar debug
-- [x] ao digitar, verificar se o titulo mudou
-- [ ] ao fechar, avisar que tem arquivo sem estar salvou ou salvar ele temporariamente no .config até que tenha titulo
-- [x] se mudar o titulo, mudar tambem o nome do arquivo, e se ja existir, colocar um 1/2/3 na frente ou algo assim
-- [ ] manter a ordem da aba
-- [ ] possibilitar ordenação das abas
-- [ ] adicionar opção de auto-inicializar, que cria o `.desktop`
-- [ ] mudar temas do sourceview
-- [ ] mudar markdown ou text
-- [ ] marcar opção de `sempre a frente`
-- [ ] colocar um * no tab, informando que ele nao esta salvo
+---
+
+## Funcionalidades
+
+- [x] Múltiplas abas para organizar suas anotações
+- [x] Suporte nativo para arquivos `.md` (Markdown) ou sem formatação
+- [x] Salva seus arquivos localmente, perfeito para uso offline
+- [x] Pode ser usado com diretórios na nuvem para sincronizar e compartilhar entre computadores diferentes
+- [x] Interface simples e intuitiva, ideal para foco e produtividade
+
+---
+
+## Por que OneFileNotes?
+
+- **Leve e rápido**
+- **Tudo em um arquivo**
+- **Podendo modificar e contribuir em um código simples e compreensivel**
+- **Organizar suas notas com privacidade**
+
+---
+
+## Como usar
+
+1. Baixe o arquivo `OneFileNotes.php` ou clone o repositório:
+   ```bash
+   git clone https://github.com/scorninpc/OneFileNotes.git
+   ```
+2. Execute o arquivo PHP-GTK3:
+   ```bash
+   ./php-gtk3 OneFileNotes.php
+   ```
+3. Configure o item de menu e autostart diretamente do menu.
+
+4. Comece a criar e salvar suas notas!
+
+---
+
+## Contribuições
+
+Contribuições são muito bem-vindas! Fique à vontade para abrir issues, enviar pull requests ou sugerir melhorias.
+
+---
+
+## Links
+
+- Repositório: [https://github.com/scorninpc/OneFileNotes](https://github.com/scorninpc/OneFileNotes)
+- PHP-GTK3: [https://github.com/scorninpc/php-gtk3](https://github.com/scorninpc/php-gtk3)
+
+---
+
+@ScornInPC in the house 
