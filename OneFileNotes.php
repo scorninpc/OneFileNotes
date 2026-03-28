@@ -222,6 +222,42 @@ END;
 		$sourceView->set_indent_on_tab(true);
 		$sourceView->set_tab_width(4);
 
+		// adiciona atalhos
+		$sourceView->connect("key-press-event", function($widget, $event) use ($sourceBuffer) {
+			$keyval = $event->key->keyval;
+			$state = $event->key->state;
+
+			// mascara do atalho para duplicar linha
+			$mask = \Gdk::SHIFT_MASK | \Gdk::CONTROL_MASK;
+
+			// verifica está duplicando linha
+			if ((($state & $mask) == $mask) && ($keyval == \Gdk::KEY_D || $keyval == \Gdk::KEY_d)) {
+
+				// recupera o inicio e fim da linha
+				$iter = $sourceBuffer->get_iter_at_mark($sourceBuffer->get_insert());
+				$start = $iter->copy();
+				$end = $iter->copy();
+				$start->set_line_offset(0);
+				if(!$end->ends_line())
+					$end->forward_to_line_end();
+
+				// recupera o texto
+				$text = $sourceBuffer->get_text($start, $end, true) . "\n";
+
+				// move para a proxima linha e insere o texto com uma quebra de linha
+				$end->forward_chars(1);
+				$sourceBuffer->insert($end, $text, strlen($text));
+
+				// move o cursor para proxima linha
+				$sourceBuffer->place_cursor($end);
+
+				return true;
+
+			}
+
+			return false;
+		});
+
 		// carrega o ultimo conteudo
 		if($filepath != NULL) {
 			$sourceBuffer->set_text($filecontent);
