@@ -227,19 +227,22 @@ END;
 			$keyval = $event->key->keyval;
 			$state = $event->key->state;
 
-			// mascara do atalho para duplicar linha
-			$mask = \Gdk::SHIFT_MASK | \Gdk::CONTROL_MASK;
+			// mascara de CTRL+SHIFT
+			$maskCtrlShift = \Gdk::SHIFT_MASK | \Gdk::CONTROL_MASK;
+			$maskCtrl = \Gdk::CONTROL_MASK;
 
-			// verifica está duplicando linha
-			if ((($state & $mask) == $mask) && ($keyval == \Gdk::KEY_D || $keyval == \Gdk::KEY_d)) {
+			// verifica está duplicando linha CTRL+SHIFT+D
+			if ((($state & $maskCtrlShift) == $maskCtrlShift) && ($keyval == \Gdk::KEY_D || $keyval == \Gdk::KEY_d)) {
 
 				// recupera o inicio e fim da linha
 				$iter = $sourceBuffer->get_iter_at_mark($sourceBuffer->get_insert());
 				$start = $iter->copy();
 				$end = $iter->copy();
 				$start->set_line_offset(0);
-				if(!$end->ends_line())
+				if(!$end->ends_line()) {
 					$end->forward_to_line_end();
+				}
+					
 
 				// recupera o texto
 				$text = $sourceBuffer->get_text($start, $end, true) . "\n";
@@ -252,7 +255,29 @@ END;
 				$sourceBuffer->place_cursor($end);
 
 				return true;
+			}
 
+			// verifica está removendo uma linha CTRL+X
+			else if ((($state & $maskCtrl) == $maskCtrl) && ($keyval == \Gdk::KEY_X || $keyval == \Gdk::KEY_x)) {
+
+				// se tiver selecionado algo, usa o CTRL+X de recortar padrão
+				if ($sourceBuffer->get_has_selection()) {
+					return false;
+				}
+
+				// recupera o inicio e fim da linha
+				$end = $start = $sourceBuffer->get_iter_at_mark($sourceBuffer->get_insert());
+				$start->set_line_offset(0);
+				$end = $start->copy();
+				if(!$end->ends_line()) {
+					$end->forward_to_line_end();
+				}
+				$end->forward_char();
+
+				// remove a linha
+				$sourceBuffer->delete($start, $end);
+
+				return true;
 			}
 
 			return false;
