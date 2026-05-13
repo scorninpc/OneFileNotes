@@ -207,7 +207,9 @@ END;
 		$eventbox->show_all();
 
 		// cria as configurações do sourceview
-		$this->widgets['sourceLanguageManager'] = new \GtkSourceLanguageManager();
+		if(!isset($this->widgets['sourceLanguageManager'])) {
+			$this->widgets['sourceLanguageManager'] = new \GtkSourceLanguageManager();
+		}
 		$lang = $this->widgets['sourceLanguageManager']->get_language("text");
 
 		// cria o buffer
